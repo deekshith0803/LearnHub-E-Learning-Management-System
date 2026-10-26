@@ -1,27 +1,21 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
-import api from "../services/api";
-import {
-  fetchCourseDetailsFailure,
-  fetchCourseDetailsStart,
-  fetchCourseDetailsSuccess,
-} from "../store/slices/courseSlice";
-import { LoadingState } from "../components/common/LoadingState";
-import { ErrorState } from "../components/common/ErrorState";
-import { EmptyState } from "../components/common/EmptyState";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
   Clock,
   GraduationCap,
-  IndianRupee,
   PlayCircle,
   ShieldCheck,
 } from "lucide-react";
+
+import api from "../services/api";
 import {
+  fetchCourseDetailsFailure,
+  fetchCourseDetailsStart,
+  fetchCourseDetailsSuccess,
   enrollCourseStart,
   enrollCourseSuccess,
   enrollCourseFailure,
@@ -30,11 +24,19 @@ import {
   fetchMyCoursesSuccess,
   fetchMyCoursesFailure,
   addMyCourse,
+  fetchMyLessonsStart,
+  fetchMyLessonsSuccess,
+  fetchMyLessonsFailure,
 } from "../store/slices/courseSlice";
+
+import LoadingState from "../components/common/LoadingState";
+import ErrorState from "../components/common/ErrorState";
+import EmptyState from "../components/common/EmptyState";
 
 const CourseDetails = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
+
   const {
     course,
     loading,
@@ -44,35 +46,36 @@ const CourseDetails = () => {
     enrollmentError,
     myCourses,
     myCoursesLoading,
+    myLesson,
+    myLessonLoading,
+    myLessonError,
   } = useSelector((state) => state.courses);
 
+  // Fetch course details
   useEffect(() => {
     const loadCourseDetail = async () => {
-      // console.log("Course ID from URL:", id);
-
       dispatch(fetchCourseDetailsStart());
+
       try {
         const response = await api.get(`/courses/${id}`);
 
-        const courseData = response?.data?.course;
-
-        console.log("Course data:", courseData);
-        console.log("Thumbnail:", courseData?.thumbnail);
-
-        dispatch(fetchCourseDetailsSuccess(courseData));
+        dispatch(fetchCourseDetailsSuccess(response.data.course));
       } catch (error) {
         dispatch(
           fetchCourseDetailsFailure(
             error.response?.data?.message ||
               error.response?.data?.error ||
-              error.message,
+              error.message ||
+              "Unable to load course details.",
           ),
         );
       }
     };
+
     loadCourseDetail();
   }, [id, dispatch]);
 
+  // Fetch enrolled courses
   useEffect(() => {
     const loadMyCourses = async () => {
       dispatch(fetchMyCoursesStart());
@@ -84,7 +87,7 @@ const CourseDetails = () => {
       } catch (error) {
         dispatch(
           fetchMyCoursesFailure(
-            error.response?.data?.message || "Failed to load enrolled courses",
+            error.response?.data?.message || "Failed to load enrolled courses.",
           ),
         );
       }
@@ -93,13 +96,49 @@ const CourseDetails = () => {
     loadMyCourses();
   }, [dispatch]);
 
+  // Check enrollment status
+  const alreadyEnrolled = myCourses.some(
+    (item) => String(item.course?._id) === String(id),
+  );
+
+  // Fetch lessons only for enrolled students
+  useEffect(() => {
+    if (myCoursesLoading) return;
+
+    if (!alreadyEnrolled) {
+      dispatch(fetchMyLessonsSuccess([]));
+      return;
+    }
+
+    const loadLessons = async () => {
+      dispatch(fetchMyLessonsStart());
+
+      try {
+        const response = await api.get(`/courses/${id}/lessons`);
+
+        dispatch(fetchMyLessonsSuccess(response.data.lessons || []));
+      } catch (error) {
+        dispatch(
+          fetchMyLessonsFailure(
+            error.response?.data?.message || "Unable to load lessons.",
+          ),
+        );
+      }
+    };
+
+    loadLessons();
+  }, [id, alreadyEnrolled, myCoursesLoading, dispatch]);
+
+  // Enroll in course
   const handleEnroll = async () => {
     dispatch(clearEnrollmentStatus());
     dispatch(enrollCourseStart());
 
     try {
       await api.post(`/courses/${id}/enroll`);
-      dispatch(enrollCourseSuccess());
+
+      dispatch(addMyCourse(id));
+      dispatch(enrollCourseSuccess(true));
     } catch (error) {
       const status = error.response?.status;
       const message =
@@ -125,8 +164,6 @@ const CourseDetails = () => {
 
   if (!course) return <EmptyState />;
 
-  const alreadyEnrolled = myCourses.some((item) => item.course?._id === id);
-
   return (
     <main className="min-h-screen bg-gray-50 pb-12">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -146,7 +183,7 @@ const CourseDetails = () => {
               {course.thumbnail ? (
                 <img
                   src={course.thumbnail}
-                  alt={course.title}
+                  alt={course.title || "Course thumbnail"}
                   className="aspect-video w-full object-cover"
                   onError={(event) => {
                     event.currentTarget.style.display = "none";
@@ -164,11 +201,11 @@ const CourseDetails = () => {
             <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
               <div className="mb-4 flex flex-wrap gap-2">
                 <span className="rounded-md bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700">
-                  {course.category}
+                  {course.category || "General"}
                 </span>
 
                 <span className="rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium capitalize text-gray-600">
-                  {course.level}
+                  {course.level || "All levels"}
                 </span>
               </div>
 
@@ -183,7 +220,7 @@ const CourseDetails = () => {
               <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 border-t border-gray-100 pt-5 text-sm text-gray-600">
                 <span className="flex items-center gap-2">
                   <Clock size={18} className="text-indigo-600" />
-                  {course.duration} hours
+                  {course.duration ?? 0} hours
                 </span>
 
                 <span className="flex items-center gap-2">
@@ -260,6 +297,69 @@ const CourseDetails = () => {
                 {course.description}
               </p>
             </section>
+
+            {/* Course lessons */}
+            <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-indigo-50 p-3 text-indigo-600">
+                  <BookOpen size={24} />
+                </div>
+
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Course Lessons
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Explore the lessons in this course.
+                  </p>
+                </div>
+              </div>
+
+              {!alreadyEnrolled ? (
+                <p className="mt-5 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+                  Enroll in this course to access its lessons.
+                </p>
+              ) : myLessonLoading ? (
+                <p className="mt-5 text-sm text-gray-500">Loading lessons...</p>
+              ) : myLessonError ? (
+                <p role="alert" className="mt-5 text-sm text-red-600">
+                  {myLessonError}
+                </p>
+              ) : myLesson.length === 0 ? (
+                <p className="mt-5 rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
+                  No lessons have been added to this course yet.
+                </p>
+              ) : (
+                <div className="mt-6 divide-y divide-gray-100">
+                  {myLesson.map((lesson, index) => (
+                    <Link
+                      to={`/courses/${id}/lessons/${lesson._id}`}
+                      key={lesson._id}
+                      className="flex items-center gap-4 py-4 transition hover:bg-gray-50"
+                    >
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                        <PlayCircle size={22} />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-gray-400">
+                          LESSON {index + 1}
+                        </p>
+
+                        <h3 className="mt-1 font-semibold text-gray-900">
+                          {lesson.title || `Lesson ${index + 1}`}
+                        </h3>
+                      </div>
+
+                      <ArrowLeft
+                        size={18}
+                        className="rotate-180 text-gray-400"
+                      />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
 
           {/* Enrollment card */}
@@ -320,7 +420,7 @@ const CourseDetails = () => {
 
               <li className="flex items-start gap-3">
                 <Clock size={18} className="shrink-0 text-indigo-600" />
-                {course.duration} hours of content
+                {course.duration ?? 0} hours of content
               </li>
 
               <li className="flex items-start gap-3">

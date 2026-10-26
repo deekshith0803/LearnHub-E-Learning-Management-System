@@ -7,9 +7,9 @@ import {
 } from "../store/slices/courseSlice";
 import api from "../services/api";
 import CourseCard from "../components/courses/CourseCard";
-import { LoadingState } from "../components/common/LoadingState";
-import { ErrorState } from "../components/common/ErrorState";
-import { EmptyState } from "../components/common/EmptyState";
+import LoadingState from "../components/common/LoadingState";
+import ErrorState from "../components/common/ErrorState";
+import EmptyState from "../components/common/EmptyState";
 
 const Courses = () => {
   const dispatch = useDispatch();

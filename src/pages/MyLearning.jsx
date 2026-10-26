@@ -1,50 +1,141 @@
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { BookOpen, Clock, ArrowRight, GraduationCap } from "lucide-react";
+import { BookOpen, GraduationCap, ArrowRight } from "lucide-react";
+
 import api from "../services/api";
-import { LoadingState } from "../components/common/LoadingState";
-import { ErrorState } from "../components/common/ErrorState";
-import { EmptyState } from "../components/common/EmptyState";
+import {
+  fetchMyCoursesStart,
+  fetchMyCoursesSuccess,
+  fetchMyCoursesFailure,
+} from "../store/slices/courseSlice";
+
+import LoadingState from "../components/common/LoadingState";
+import ErrorState from "../components/common/ErrorState";
+import CourseCard from "../components/courses/CourseCard";
 
 export default function MyLearning() {
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const dispatch = useDispatch();
+  const [courseDetails, setCourseDetails] = useState({});
+
+  const { myCourses, myCoursesLoading, myCoursesError } = useSelector(
+    (state) => state.courses,
+  );
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchMyCourses = async () => {
+      dispatch(fetchMyCoursesStart());
+
       try {
-        setLoading(true);
-        setError("");
-
         const response = await api.get("/my-courses");
+        const enrolledCourses = response.data.enrollments || [];
 
-        console.log("My enrolled courses:", response.data);
+        if (cancelled) return;
 
-        // Adjust this if your backend returns a different response structure.
-        const enrolledCourses =
-          response.data.courses || response.data.enrollments || [];
+        dispatch(fetchMyCoursesSuccess(enrolledCourses));
 
-        setCourses(enrolledCourses);
-      } catch (error) {
-        setError(
-          error.response?.data?.message ||
-            "Unable to load your enrolled courses.",
+        const results = await Promise.all(
+          enrolledCourses.map(async (item) => {
+            const course = item.course || item;
+            const courseId = course._id;
+
+            if (!courseId) return null;
+
+            try {
+              const [lessonsResponse, progressResponse] = await Promise.all([
+                api.get(`/courses/${courseId}/lessons`).catch((error) => {
+                  if (error.response?.status === 404) {
+                    return { data: { lessons: [] } };
+                  }
+                  throw error;
+                }),
+                api.get(`/courses/${courseId}/progress`).catch((error) => {
+                  if (error.response?.status === 404) {
+                    return {
+                      data: {
+                        progress: {
+                          completedLessons: [],
+                          percentage: 0,
+                        },
+                      },
+                    };
+                  }
+                  throw error;
+                }),
+              ]);
+
+              return {
+                courseId,
+                lessons: lessonsResponse.data.lessons || [],
+                progress: progressResponse.data.progress || {
+                  completedLessons: [],
+                  percentage: 0,
+                },
+              };
+            } catch (error) {
+              console.error(
+                `Unable to load course progress:`,
+                error.response?.data || error.message,
+              );
+
+              return {
+                courseId,
+                lessons: [],
+                progress: {
+                  completedLessons: [],
+                  percentage: 0,
+                },
+              };
+            }
+          }),
         );
-      } finally {
-        setLoading(false);
+
+        if (!cancelled) {
+          const detailsMap = {};
+
+          results.filter(Boolean).forEach((detail) => {
+            detailsMap[detail.courseId] = detail;
+          });
+
+          setCourseDetails(detailsMap);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          dispatch(
+            fetchMyCoursesFailure(
+              error.response?.data?.message ||
+                "Unable to load your enrolled courses.",
+            ),
+          );
+        }
       }
     };
 
     fetchMyCourses();
-  }, []);
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch]);
+
+  if (myCoursesLoading) return <LoadingState />;
+  if (myCoursesError) return <ErrorState message={myCoursesError} />;
+
+  const completedCoursesCount = myCourses.filter((item) => {
+    const course = item.course || item;
+    const details = courseDetails[course._id];
+    const total = details?.lessons?.length || 0;
+    const completed = details?.progress?.completedLessons?.length || 0;
+
+    return total > 0 && completed >= total;
+  }).length;
 
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
+        {/* Page heading */}
         <div className="mb-8">
           <p className="text-sm font-medium text-indigo-600">
             STUDENT DASHBOARD
@@ -57,7 +148,7 @@ export default function MyLearning() {
           </p>
         </div>
 
-        {/* Summary */}
+        {/* Summary cards */}
         <div className="mb-8 grid gap-4 sm:grid-cols-2">
           <div className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5">
             <div className="rounded-xl bg-indigo-50 p-3 text-indigo-600">
@@ -67,7 +158,7 @@ export default function MyLearning() {
             <div>
               <p className="text-sm text-gray-500">Enrolled courses</p>
               <p className="text-2xl font-bold text-gray-900">
-                {courses.length}
+                {myCourses.length}
               </p>
             </div>
           </div>
@@ -78,15 +169,15 @@ export default function MyLearning() {
             </div>
 
             <div>
-              <p className="text-sm text-gray-500">Learning status</p>
-              <p className="text-lg font-semibold text-gray-900">
-                Keep learning
+              <p className="text-sm text-gray-500">Completed courses</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {completedCoursesCount}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Course list */}
+        {/* Course heading */}
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">Your courses</h2>
 
@@ -98,7 +189,8 @@ export default function MyLearning() {
           </Link>
         </div>
 
-        {courses.length === 0 ? (
+        {/* Empty state or course cards */}
+        {myCourses.length === 0 ? (
           <div className="rounded-2xl border border-gray-200 bg-white px-6 py-14 text-center">
             <BookOpen size={40} className="mx-auto text-gray-400" />
 
@@ -120,62 +212,78 @@ export default function MyLearning() {
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {courses.map((item) => {
-              // Supports either a course object or an enrollment
-              // containing a populated course field.
+            {myCourses.map((item) => {
               const course = item.course || item;
-              const courseId = course._id;
+              const details = courseDetails[course._id];
+
+              const lessons = details?.lessons || [];
+              const completedLessons =
+                details?.progress?.completedLessons || [];
+
+              const totalLessons = lessons.length;
+              const completedCount = completedLessons.length;
+
+              const isCourseCompleted =
+                totalLessons > 0 && completedCount >= totalLessons;
+
+              const isLessonCompleted = (lessonId) =>
+                completedLessons.some((completedLesson) => {
+                  const completedId =
+                    typeof completedLesson === "object"
+                      ? completedLesson?._id
+                      : completedLesson;
+
+                  return String(completedId) === String(lessonId);
+                });
+
+              const nextLesson = lessons.find(
+                (lesson) => !isLessonCompleted(lesson._id),
+              );
+
+              const continueUrl = isCourseCompleted
+                ? `/courses/${course._id}`
+                : nextLesson
+                  ? `/courses/${course._id}/lessons/${nextLesson._id}`
+                  : `/courses/${course._id}`;
 
               return (
-                <article
-                  key={item._id || courseId}
-                  className="overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:shadow-md"
-                >
-                  {course.thumbnail ? (
-                    <img
-                      src={course.thumbnail}
-                      alt={course.title}
-                      className="aspect-video w-full bg-gray-100 object-cover"
-                    />
-                  ) : (
-                    <div className="flex aspect-video items-center justify-center bg-indigo-50 text-indigo-400">
-                      <BookOpen size={42} />
+                <div key={course._id}>
+                  <CourseCard
+                    course={course}
+                    isCompleted={isCourseCompleted}
+                    to={continueUrl}
+                  />
+
+                  {totalLessons > 0 && (
+                    <div className="mt-3 px-1">
+                      <div className="mb-2 flex justify-between text-xs text-gray-500">
+                        <span>
+                          {isCourseCompleted
+                            ? "All lessons completed!"
+                            : `${completedCount} of ${totalLessons} lessons completed`}
+                        </span>
+
+                        <span>
+                          {Math.round((completedCount / totalLessons) * 100)}%
+                        </span>
+                      </div>
+
+                      <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            isCourseCompleted ? "bg-green-500" : "bg-indigo-600"
+                          }`}
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              (completedCount / totalLessons) * 100,
+                            )}%`,
+                          }}
+                        />
+                      </div>
                     </div>
                   )}
-
-                  <div className="p-5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
-                        {course.category || "General"}
-                      </span>
-
-                      <span className="text-xs capitalize text-gray-500">
-                        {course.level || "All levels"}
-                      </span>
-                    </div>
-
-                    <h3 className="mt-3 text-lg font-bold text-gray-900">
-                      {course.title || "Untitled course"}
-                    </h3>
-
-                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-gray-500">
-                      {course.description || "Start learning this course."}
-                    </p>
-
-                    <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
-                      <Clock size={16} />
-                      {course.duration ?? 0} hours
-                    </div>
-
-                    <Link
-                      to={`/courses/${courseId}`}
-                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700"
-                    >
-                      Continue Learning
-                      <ArrowRight size={17} />
-                    </Link>
-                  </div>
-                </article>
+                </div>
               );
             })}
           </div>

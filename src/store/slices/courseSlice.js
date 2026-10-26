@@ -4,12 +4,23 @@ const initialState = {
   courses: [],
   loading: false,
   error: null,
+
   enrollmentLoading: false,
   enrollmentError: null,
   enrollmentSuccess: null,
+
   myCourses: [],
   myCoursesLoading: false,
   myCoursesError: null,
+
+  myLesson: [],
+  myLessonLoading: false,
+  myLessonError: null,
+
+  progress: null,
+  progressLoading: false,
+  progressError: null,
+  progressSaving: false,
 };
 
 const courseSlice = createSlice({
@@ -78,15 +89,63 @@ const courseSlice = createSlice({
     },
 
     addMyCourse: (state, action) => {
+      const courseId = String(action.payload);
+
       const exists = state.myCourses.some(
-        (item) => item.course?._id === action.payload,
+        (item) => String(item.course?._id) === courseId,
       );
 
       if (!exists) {
         state.myCourses.push({
-          course: { _id: action.payload },
+          course: { _id: courseId },
         });
       }
+    },
+
+    fetchMyLessonsStart: (state) => {
+      state.myLessonLoading = true;
+      state.myLessonError = null;
+    },
+
+    fetchMyLessonsSuccess: (state, action) => {
+      state.myLessonLoading = false;
+      state.myLessonError = null;
+      state.myLesson = action.payload;
+    },
+
+    fetchMyLessonsFailure: (state, action) => {
+      state.myLessonLoading = false;
+      state.myLessonError = action.payload;
+    },
+
+    fetchProgressStart: (state) => {
+      state.progressLoading = true;
+      state.progressError = null;
+    },
+
+    fetchProgressSuccess: (state, action) => {
+      state.progressLoading = false;
+      state.progress = action.payload;
+    },
+
+    fetchProgressFailure: (state, action) => {
+      state.progressLoading = false;
+      state.progressError = action.payload;
+    },
+
+    updateProgressStart: (state) => {
+      state.progressSaving = true;
+      state.progressError = null;
+    },
+
+    updateProgressSuccess: (state, action) => {
+      state.progressSaving = false;
+      state.progress = action.payload;
+    },
+
+    updateProgressFailure: (state, action) => {
+      state.progressSaving = false;
+      state.progressError = action.payload;
     },
   },
 });
@@ -106,6 +165,15 @@ export const {
   fetchMyCoursesSuccess,
   fetchMyCoursesFailure,
   addMyCourse,
+  fetchMyLessonsStart,
+  fetchMyLessonsSuccess,
+  fetchMyLessonsFailure,
+  fetchProgressStart,
+  fetchProgressSuccess,
+  fetchProgressFailure,
+  updateProgressStart,
+  updateProgressSuccess,
+  updateProgressFailure,
 } = courseSlice.actions;
 
 export default courseSlice.reducer;

@@ -56,6 +56,11 @@ export default function Navbar() {
           My Learning
         </NavLink>
       )}
+      {isAuthenticated && (
+        <NavLink to="/profile" className={navLinkClass} onClick={closeMenu}>
+          My Profile
+        </NavLink>
+      )}
     </>
   );
 

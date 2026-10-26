@@ -11,6 +11,8 @@ import { login, logout } from "./store/slices/authSlice";
 import api from "./services/api";
 import { useEffect } from "react";
 import MyLearning from "./pages/MyLearning";
+import LessonPlayer from "./pages/LessonPlayer";
+import StudentProfile from "./pages/StudentProfile";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -39,6 +41,11 @@ export default function App() {
           <Route path="/courses" element={<Courses />} />
           <Route path="/courses/:id" element={<CourseDetails />} />
           <Route path="/dashboard" element={<MyLearning />} />
+          <Route
+            path="/courses/:id/lessons/:lessonId"
+            element={<LessonPlayer />}
+          />
+          <Route path="/profile" element={<StudentProfile />} />
         </Route>
       </Routes>
     </BrowserRouter>
