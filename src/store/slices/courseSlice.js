@@ -21,13 +21,20 @@ const initialState = {
   progressLoading: false,
   progressError: null,
   progressSaving: false,
+
+  quizzes: [],
+  quizzesLoading: false,
+  quizzesError: null,
+  quizSubmitting: false,
+  quizSubmitError: null,
+  quizResult: null,
 };
 
 const courseSlice = createSlice({
   name: "courses",
   initialState,
   reducers: {
-    fetchCoursesStart: (state, action) => {
+    fetchCoursesStart: (state) => {
       state.loading = true;
       state.error = null;
     },
@@ -40,7 +47,7 @@ const courseSlice = createSlice({
       state.error = action.payload;
     },
 
-    fetchCourseDetailsStart: (state, action) => {
+    fetchCourseDetailsStart: (state) => {
       state.loading = true;
       state.error = null;
     },
@@ -147,6 +154,38 @@ const courseSlice = createSlice({
       state.progressSaving = false;
       state.progressError = action.payload;
     },
+
+    fetchQuizzesStart: (state) => {
+      state.quizzesLoading = true;
+      state.quizzesError = null;
+    },
+    fetchQuizzesSuccess: (state, action) => {
+      state.quizzesLoading = false;
+      state.quizzes = action.payload;
+      state.quizzesError = null;
+    },
+    fetchQuizzesFailure: (state, action) => {
+      state.quizzesLoading = false;
+      state.quizzesError = action.payload;
+    },
+
+    submitQuizStart: (state) => {
+      state.quizSubmitting = true;
+      state.quizSubmitError = null;
+    },
+    submitQuizSuccess: (state, action) => {
+      state.quizSubmitting = false;
+      state.quizResult = action.payload;
+      state.quizSubmitError = null;
+    },
+    submitQuizFailure: (state, action) => {
+      state.quizSubmitting = false;
+      state.quizSubmitError = action.payload;
+    },
+    resetQuizResult: (state) => {
+      state.quizResult = null;
+      state.quizSubmitError = null;
+    },
   },
 });
 
@@ -174,6 +213,13 @@ export const {
   updateProgressStart,
   updateProgressSuccess,
   updateProgressFailure,
+  fetchQuizzesStart,
+  fetchQuizzesSuccess,
+  fetchQuizzesFailure,
+  submitQuizStart,
+  submitQuizSuccess,
+  submitQuizFailure,
+  resetQuizResult,
 } = courseSlice.actions;
 
 export default courseSlice.reducer;

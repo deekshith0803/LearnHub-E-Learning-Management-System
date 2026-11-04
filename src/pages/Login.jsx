@@ -1,28 +1,53 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { useDispatch } from "react-redux";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, BookOpen } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 
 import api from "../services/api";
 import { login } from "../store/slices/authSlice";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
+  const { user, isAuthenticated, isCheckingAuth } = useSelector(
+    (state) => state.auth,
+  );
+
+  const registrationMessage = location.state?.message;
+
+  useEffect(() => {
+    // If arriving from registration, do not auto-redirect; let the user log in
+    if (location.state?.registered) {
+      return;
+    }
+
+    if (!isCheckingAuth && isAuthenticated && user) {
+      if (user.role === "instructor") {
+        navigate("/instructor", { replace: true });
+      } else if (user.role === "admin") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, isCheckingAuth, navigate, location.state]);
 
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState("");
 
   const formik = useFormik({
+    enableReinitialize: true,
     initialValues: {
-      email: "",
+      email: location.state?.email || "",
       password: "",
     },
 
     validationSchema: Yup.object({
       email: Yup.string()
+        .trim()
         .email("Enter a valid email address")
         .required("Email is required"),
 
@@ -30,25 +55,35 @@ export default function Login() {
     }),
 
     onSubmit: async (values) => {
+      setServerError("");
       try {
-        const response = await api.post("/auth/login", values);
+        const response = await api.post("/auth/login", {
+          email: values.email.trim().toLowerCase(),
+          password: values.password,
+        });
 
         const user = response.data.user;
 
         dispatch(login(user));
 
-        navigate("/");
+        if (user?.role === "instructor") {
+          navigate("/instructor", { replace: true });
+        } else if (user?.role === "admin") {
+          navigate("/admin", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
       } catch (error) {
         setServerError(
           error.response?.data?.message ||
-            "Login failed. Please check your email and password.",
+          "Login failed. Please check your email and password.",
         );
       }
     },
   });
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 text-slate-900">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-10 text-slate-900 dark:text-slate-100 transition-colors">
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link to="/" className="mb-8 flex items-center justify-center gap-2">
@@ -56,26 +91,39 @@ export default function Login() {
             <BookOpen size={24} />
           </div>
 
-          <span className="text-2xl font-bold tracking-tight">
-            Learn<span className="text-indigo-600">Hub</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Learn<span className="text-indigo-600 dark:text-indigo-400">Hub</span>
           </span>
         </Link>
 
         {/* Login Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8">
           <div className="mb-7 text-center">
-            <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Welcome back
+            </h1>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Sign in to continue your learning journey.
             </p>
           </div>
+
+          {/* Registration success alert */}
+          {registrationMessage && (
+            <div
+              role="status"
+              className="mb-5 flex items-start gap-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-sm text-emerald-800 dark:text-emerald-300"
+            >
+              <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <span>{registrationMessage}</span>
+            </div>
+          )}
 
           {/* Backend error */}
           {serverError && (
             <div
               role="alert"
-              className="mb-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600"
+              className="mb-5 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-600 dark:text-red-400"
             >
               {serverError}
             </div>
@@ -84,7 +132,7 @@ export default function Login() {
           <form onSubmit={formik.handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-medium">
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Email address
               </label>
 
@@ -103,7 +151,7 @@ export default function Login() {
                   value={formik.values.email}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className="w-full rounded-lg border border-slate-300 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 py-3 pl-10 pr-4 text-sm outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950"
                 />
               </div>
 
@@ -117,7 +165,7 @@ export default function Login() {
             {/* Password */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <label htmlFor="password" className="text-sm font-medium">
+                <label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Password
                 </label>
               </div>
@@ -137,14 +185,14 @@ export default function Login() {
                   value={formik.values.password}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className="w-full rounded-lg border border-slate-300 py-3 pl-10 pr-11 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 py-3 pl-10 pr-11 text-sm outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950"
                 />
 
                 <button
                   type="button"
                   onClick={() => setShowPassword((previous) => !previous)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -168,11 +216,11 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
             Don't have an account?{" "}
             <Link
               to="/register"
-              className="font-semibold text-indigo-600 hover:text-indigo-700"
+              className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
             >
               Create account
             </Link>

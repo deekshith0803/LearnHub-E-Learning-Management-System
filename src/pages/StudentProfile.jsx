@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   ArrowLeft,
   BookOpen,
-  Camera,
   CheckCircle2,
   GraduationCap,
   Mail,
@@ -13,11 +12,16 @@ import {
   Save,
   ShieldCheck,
   X,
-  ArrowRightLeft,
+  Clock,
+  AlertCircle,
+  Send,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 import api from "../services/api";
-import { setUser, switchDashboard } from "../store/slices/authSlice";
+import { setUser } from "../store/slices/authSlice";
+import { useTheme } from "../context/ThemeContext";
 
 import {
   fetchProfileStart,
@@ -44,7 +48,7 @@ const getInitials = (name = "") =>
 
 export default function StudentProfile() {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   const {
     user: authUser,
@@ -65,6 +69,9 @@ export default function StudentProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("success");
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestReason, setRequestReason] = useState("");
+  const [submittingRequest, setSubmittingRequest] = useState(false);
 
   const showMessage = (text, type = "success") => {
     setMessage(text);
@@ -89,8 +96,8 @@ export default function StudentProfile() {
       dispatch(
         fetchProfileFailure(
           err.response?.data?.message ||
-            err.message ||
-            "Unable to load your profile.",
+          err.message ||
+          "Unable to load your profile.",
         ),
       );
     }
@@ -138,46 +145,42 @@ export default function StudentProfile() {
     }
   };
 
-  // Determine which dashboards this account is authorized to use.
-  const roles =
-    Array.isArray(user?.roles) && user.roles.length
-      ? user.roles
-      : user?.role
-        ? [user.role]
-        : [];
-
-  const canSwitchDashboard =
-    roles.includes("student") && roles.includes("instructor");
-
-  const canRequestInstructorAccess =
-    user?.role === "student" && !roles.includes("instructor");
-
-  // Switch dashboard using Redux.
-  const handleDashboardSwitch = () => {
-    const nextDashboard =
-      activeDashboard === "student" ? "instructor" : "student";
-
-    if (!roles.includes(nextDashboard)) {
+  // Submit request to become an instructor
+  const handleSubmitInstructorRequest = async (e) => {
+    e.preventDefault();
+    if (!requestReason.trim()) {
       showMessage(
-        `Your account does not have ${nextDashboard} access.`,
+        "Please provide a brief statement or teaching experience.",
         "error",
       );
       return;
     }
 
-    dispatch(switchDashboard(nextDashboard));
+    setSubmittingRequest(true);
+    try {
+      const response = await api.post("/auth/request-instructor", {
+        reason: requestReason.trim(),
+      });
 
-    navigate(
-      nextDashboard === "instructor" ? "/instructor/dashboard" : "/dashboard",
-    );
-  };
-
-  // Request access is a UI placeholder until a backend endpoint exists.
-  const handleRequestInstructorAccess = () => {
-    showMessage(
-      "Instructor access requests are not connected yet. Please contact your administrator.",
-      "error",
-    );
+      if (response.data?.success && response.data?.user) {
+        dispatch(setUser(response.data.user));
+        dispatch(fetchProfileSuccess(response.data.user));
+        setShowRequestModal(false);
+        setRequestReason("");
+        showMessage(
+          "Your instructor request has been submitted to the administrator for review.",
+          "success",
+        );
+      }
+    } catch (err) {
+      showMessage(
+        err.response?.data?.message ||
+        "Failed to submit instructor request. Please try again.",
+        "error",
+      );
+    } finally {
+      setSubmittingRequest(false);
+    }
   };
 
   if (isCheckingAuth || (isAuthenticated && loading && !user)) {
@@ -222,17 +225,19 @@ export default function StudentProfile() {
   const role = user.role || "student";
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 px-4 py-8 text-slate-900 dark:text-slate-100 sm:px-6 lg:px-8 transition-colors">
       <div className="mx-auto max-w-5xl">
         {/* Navigation */}
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <Link
             to={
-              activeDashboard === "instructor"
-                ? "/instructor/dashboard"
-                : "/dashboard"
+              role === "admin"
+                ? "/admin"
+                : role === "instructor" || activeDashboard === "instructor"
+                  ? "/instructor"
+                  : "/dashboard"
             }
-            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-indigo-600"
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 transition hover:text-indigo-600 dark:hover:text-indigo-400"
           >
             <ArrowLeft size={17} />
             Back to dashboard
@@ -240,7 +245,7 @@ export default function StudentProfile() {
 
           <Link
             to="/courses"
-            className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+            className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
           >
             <BookOpen size={17} />
             Explore courses
@@ -249,33 +254,33 @@ export default function StudentProfile() {
 
         {/* Page heading */}
         <header className="mb-7">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-600">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-400">
             Account settings
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
             My Profile
           </h1>
 
-          <p className="mt-2 text-slate-500">
+          <p className="mt-2 text-slate-500 dark:text-slate-400">
             Manage your personal information and account details.
           </p>
         </header>
 
         {/* Profile summary */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-50 text-2xl font-bold text-indigo-700 ring-4 ring-slate-50">
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-2xl font-bold text-indigo-700 dark:text-indigo-400 ring-4 ring-slate-50 dark:ring-slate-800">
               {getInitials(name || "Student")}
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="break-words text-2xl font-bold text-slate-950">
+                <h2 className="break-words text-2xl font-bold text-slate-950 dark:text-white">
                   {name || "Your Name"}
                 </h2>
 
-                <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold capitalize text-indigo-700">
+                <span className="rounded-full bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 text-xs font-semibold capitalize text-indigo-700 dark:text-indigo-300">
                   {role}
                 </span>
               </div>
@@ -289,38 +294,14 @@ export default function StudentProfile() {
                 Member since{" "}
                 {user.createdAt
                   ? new Date(user.createdAt).toLocaleDateString(undefined, {
-                      month: "long",
-                      year: "numeric",
-                    })
+                    month: "long",
+                    year: "numeric",
+                  })
                   : "Date unavailable"}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {canSwitchDashboard && (
-                <button
-                  type="button"
-                  onClick={handleDashboardSwitch}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700"
-                >
-                  <ArrowRightLeft size={16} />
-                  Switch to{" "}
-                  {activeDashboard === "student"
-                    ? "Instructor"
-                    : "Student"}{" "}
-                  Dashboard
-                </button>
-              )}
-
-              {canRequestInstructorAccess && (
-                <button
-                  type="button"
-                  onClick={handleRequestInstructorAccess}
-                  className="rounded-xl border border-indigo-200 px-4 py-3 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
-                >
-                  Request Instructor Access
-                </button>
-              )}
 
               {!isEditing && (
                 <button
@@ -343,11 +324,10 @@ export default function StudentProfile() {
         {message && (
           <div
             role="status"
-            className={`mt-5 flex items-start gap-3 rounded-xl border p-4 text-sm ${
-              messageType === "error"
-                ? "border-red-200 bg-red-50 text-red-700"
-                : "border-emerald-200 bg-emerald-50 text-emerald-700"
-            }`}
+            className={`mt-5 flex items-start gap-3 rounded-xl border p-4 text-sm ${messageType === "error"
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              }`}
           >
             {messageType === "error" ? (
               <X size={18} className="mt-0.5 shrink-0" />
@@ -362,12 +342,12 @@ export default function StudentProfile() {
         {/* Main content */}
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_300px]">
           {/* Personal information */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8">
             <div className="mb-7">
-              <h2 className="text-xl font-bold text-slate-950">
+              <h2 className="text-xl font-bold text-slate-950 dark:text-white">
                 Personal information
               </h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Keep your account information up to date.
               </p>
             </div>
@@ -406,7 +386,7 @@ export default function StudentProfile() {
                     <div>
                       <label
                         htmlFor="name"
-                        className="mb-2 block text-sm font-semibold text-slate-700"
+                        className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
                       >
                         Full name
                       </label>
@@ -416,7 +396,7 @@ export default function StudentProfile() {
                         name="name"
                         autoComplete="name"
                         placeholder="Enter your full name"
-                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-950"
                       />
 
                       <ErrorMessage
@@ -429,7 +409,7 @@ export default function StudentProfile() {
                     <div>
                       <label
                         htmlFor="email"
-                        className="mb-2 block text-sm font-semibold text-slate-700"
+                        className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
                       >
                         Email address
                       </label>
@@ -440,7 +420,7 @@ export default function StudentProfile() {
                         type="email"
                         autoComplete="email"
                         placeholder="you@example.com"
-                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-950"
                       />
 
                       <ErrorMessage
@@ -454,7 +434,7 @@ export default function StudentProfile() {
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <label
                           htmlFor="bio"
-                          className="text-sm font-semibold text-slate-700"
+                          className="text-sm font-semibold text-slate-700 dark:text-slate-300"
                         >
                           About me
                         </label>
@@ -471,7 +451,7 @@ export default function StudentProfile() {
                         rows={4}
                         maxLength={300}
                         placeholder="Write a short introduction..."
-                        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                        className="w-full resize-y rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-950"
                       />
 
                       <ErrorMessage
@@ -481,7 +461,7 @@ export default function StudentProfile() {
                       />
                     </div>
 
-                    <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-5">
+                    <div className="flex flex-wrap gap-3 border-t border-slate-100 dark:border-slate-800 pt-5">
                       <button
                         type="submit"
                         disabled={isSubmitting || updating}
@@ -499,7 +479,7 @@ export default function StudentProfile() {
                           setIsEditing(false);
                           setMessage("");
                         }}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-700"
                       >
                         <X size={16} />
                         Cancel
@@ -514,25 +494,25 @@ export default function StudentProfile() {
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Full name
                   </p>
-                  <p className="break-words font-medium text-slate-800">
+                  <p className="break-words font-medium text-slate-800 dark:text-slate-200">
                     {name || "Not provided"}
                   </p>
                 </div>
 
-                <div className="border-t border-slate-100 pt-5">
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-5">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Email address
                   </p>
-                  <p className="break-all font-medium text-slate-800">
+                  <p className="break-all font-medium text-slate-800 dark:text-slate-200">
                     {email || "Not provided"}
                   </p>
                 </div>
 
-                <div className="border-t border-slate-100 pt-5">
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-5">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
                     About me
                   </p>
-                  <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-600">
+                  <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-600 dark:text-slate-300">
                     {bio || "You haven't added a bio yet."}
                   </p>
                 </div>
@@ -542,53 +522,231 @@ export default function StudentProfile() {
 
           {/* Account sidebar */}
           <aside className="space-y-6">
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
               <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                 <ShieldCheck size={22} />
               </div>
 
-              <h2 className="font-bold text-slate-950">Account role</h2>
+              <h2 className="font-bold text-slate-950 dark:text-white">Account role</h2>
 
-              <p className="mt-2 text-sm leading-6 text-slate-500">
+              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 Your account role determines which LearnHub features you can
                 access.
               </p>
 
-              <div className="mt-5 flex items-center gap-3 rounded-xl bg-slate-50 p-4">
-                <GraduationCap className="shrink-0 text-indigo-600" size={22} />
+              <div className="mt-5 flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 p-4">
+                <GraduationCap className="shrink-0 text-indigo-600 dark:text-indigo-400" size={22} />
                 <div>
-                  <p className="text-sm font-semibold capitalize text-slate-800">
+                  <p className="text-sm font-semibold capitalize text-slate-800 dark:text-slate-200">
                     {role}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     Current account role
                   </p>
                 </div>
               </div>
 
               {role === "student" && (
-                <p className="mt-4 text-sm leading-6 text-slate-500">
-                  Interested in teaching? Request instructor access or contact
-                  your administrator.
-                </p>
+                <>
+                  {user?.instructorRequestStatus === "pending" ? (
+                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                        <Clock size={15} /> Application Pending Review
+                      </div>
+                      <p className="mt-1.5 text-[11px] leading-relaxed text-amber-700">
+                        Submitted on{" "}
+                        {user.instructorRequestDate
+                          ? new Date(user.instructorRequestDate).toLocaleDateString()
+                          : "recently"}
+                        . An administrator will review your application soon.
+                      </p>
+                      {user.instructorRequestReason && (
+                        <p className="mt-2.5 rounded-lg border border-amber-200 bg-white/80 p-2 text-[11px] italic text-slate-700">
+                          "{user.instructorRequestReason}"
+                        </p>
+                      )}
+                    </div>
+                  ) : user?.instructorRequestStatus === "rejected" ? (
+                    <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-900">
+                      <div className="flex items-center gap-1.5 font-bold text-red-800">
+                        <AlertCircle size={15} /> Request Declined
+                      </div>
+                      <p className="mt-1 text-[11px] leading-relaxed text-red-700">
+                        {user.instructorRequestFeedback ||
+                          "Your request was declined after administrative review."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRequestReason(user?.instructorRequestReason || "");
+                          setShowRequestModal(true);
+                        }}
+                        className="mt-3 w-full rounded-lg bg-red-100 py-1.5 text-center text-xs font-semibold text-red-800 hover:bg-red-200 transition"
+                      >
+                        Re-apply for Instructor
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-4">
+                      <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+                        Interested in teaching on LearnHub? Apply for instructor privileges to publish courses.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowRequestModal(true)}
+                        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 py-2.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition"
+                      >
+                        <GraduationCap size={15} />
+                        Apply to Teach
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
 
               {role === "instructor" && (
-                <p className="mt-4 text-sm leading-6 text-slate-500">
+                <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
                   Your instructor access is managed by your account permissions.
                 </p>
               )}
 
               {role === "admin" && (
-                <p className="mt-4 text-sm leading-6 text-slate-500">
+                <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
                   Administrator privileges are managed by an authorized
                   administrator.
                 </p>
               )}
             </section>
+
+            {/* Interface Theme Section (Light / Dark Mode) */}
+            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                {theme === "dark" ? <Moon size={22} /> : <Sun size={22} />}
+              </div>
+
+              <h2 className="font-bold text-slate-950 dark:text-white">
+                Appearance & Theme
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                Choose between clean light mode and eye-friendly dark mode for studying.
+              </p>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setTheme("light")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border p-3.5 transition text-center ${theme === "light"
+                    ? "border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold shadow-2xs"
+                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    }`}
+                >
+                  <Sun
+                    size={20}
+                    className={
+                      theme === "light" ? "text-amber-500" : "text-slate-400"
+                    }
+                  />
+                  <span className="text-xs font-semibold">Light Mode</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTheme("dark")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border p-3.5 transition text-center ${theme === "dark"
+                    ? "border-indigo-500 bg-indigo-950/50 text-indigo-300 font-bold shadow-2xs"
+                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    }`}
+                >
+                  <Moon
+                    size={20}
+                    className={
+                      theme === "dark" ? "text-indigo-400" : "text-slate-400"
+                    }
+                  />
+                  <span className="text-xs font-semibold">Dark Mode</span>
+                </button>
+              </div>
+            </section>
           </aside>
         </div>
       </div>
+
+      {/* Request Instructor Access Modal */}
+      {showRequestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                  <GraduationCap size={13} /> Instructor Application
+                </div>
+                <h3 className="mt-2 text-xl font-bold text-slate-950 dark:text-white">
+                  Apply for Teaching Access
+                </h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Submit your application to the platform administrator. Once approved, you will have access to create and manage courses.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRequestModal(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitInstructorRequest} className="mt-5 space-y-4">
+              <div>
+                <label htmlFor="reason" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Teaching Focus & Relevant Experience <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="reason"
+                  rows={4}
+                  maxLength={500}
+                  value={requestReason}
+                  onChange={(e) => setRequestReason(e.target.value)}
+                  placeholder="Describe the topics you would like to teach (e.g. Full Stack Web Development, Python, UI/UX) and any background or expertise..."
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950"
+                  required
+                />
+                <div className="mt-1 flex justify-between text-[11px] text-slate-400">
+                  <span>Be specific about what courses you plan to create.</span>
+                  <span>{requestReason.length}/500</span>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-indigo-100 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/40 p-3 text-xs text-indigo-900 dark:text-indigo-200">
+                <p className="font-semibold text-indigo-800 dark:text-indigo-300">What happens next?</p>
+                <p className="mt-0.5 text-[11px] text-indigo-700 dark:text-indigo-300">
+                  Your request will appear in the Admin Dashboard for review. Once approved, your role will be upgraded to Instructor and you can access the Instructor Studio.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowRequestModal(false)}
+                  disabled={submittingRequest}
+                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingRequest || !requestReason.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700 disabled:opacity-50 transition"
+                >
+                  <Send size={13} />
+                  <span>{submittingRequest ? "Submitting..." : "Submit Application"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

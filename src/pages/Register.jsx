@@ -19,71 +19,102 @@ const Register = () => {
 
   const formik = useFormik({
     initialValues: {
+      name: "",
       email: "",
       password: "",
       confirmPassword: "",
+      terms: true,
     },
 
     validationSchema: Yup.object({
+      name: Yup.string()
+        .trim()
+        .min(2, "Name must be at least 2 characters")
+        .required("Full name is required"),
+
       email: Yup.string()
+        .trim()
         .email("Invalid email address")
         .required("Email is required"),
 
       password: Yup.string()
-        .min(8, "Password must be at least 8 characters")
+        .min(6, "Password must be at least 6 characters")
         .required("Password is required"),
 
       confirmPassword: Yup.string()
         .oneOf([Yup.ref("password")], "Passwords must match")
         .required("Please confirm your password"),
+
+      terms: Yup.boolean().oneOf(
+        [true],
+        "You must agree to the Terms and Privacy Policy",
+      ),
     }),
-    onSubmit: async (values) => {
+    onSubmit: async (values, { setSubmitting }) => {
       try {
-        const { confirmPassword, terms, ...registerData } = values;
+        const { name, email, password } = values;
+        const registerData = {
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        };
 
         const response = await api.post("/auth/register", registerData);
 
-        console.log(response.data);
+        // Reset auth state to ensure no partial unauthenticated session
+        dispatch(register());
 
-        dispatch(register(response.data.user));
-
-        // Navigate to login after successful registration
+        // Explicitly navigate to login page after successful registration with a success banner
         navigate("/login", {
-          state: { message: "Registration successful! Please log in." },
+          replace: true,
+          state: {
+            registered: true,
+            email: registerData.email,
+            message:
+              response.data?.message ||
+              "Account registered successfully! Please sign in with your email and password.",
+          },
         });
       } catch (error) {
-        const message = error.response?.data?.message || "";
+        const message =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "";
 
         if (
           message.includes("E11000") ||
-          message.toLowerCase().includes("duplicate key")
+          message.toLowerCase().includes("duplicate") ||
+          message.toLowerCase().includes("already registered")
         ) {
           formik.setFieldError("email", "This email is already registered.");
         } else {
           formik.setStatus(message || "Registration failed. Please try again.");
         }
+      } finally {
+        setSubmitting(false);
       }
     },
   });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-12 text-slate-900 dark:text-slate-100 transition-colors">
       <div className="w-full max-w-md">
         <Link to="/" className="mb-8 flex items-center justify-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
             <BookOpen size={22} />
           </div>
-          <span className="text-2xl font-bold tracking-tight text-slate-900">
-            Learn<span className="text-indigo-600">Hub</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Learn<span className="text-indigo-600 dark:text-indigo-400">Hub</span>
           </span>
         </Link>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm sm:p-8">
           <div className="mb-7">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               Create your account
             </h1>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
               Sign up to explore courses and start learning.
             </p>
           </div>
@@ -93,7 +124,7 @@ const Register = () => {
             <div>
               <label
                 htmlFor="name"
-                className="mb-2 block text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
               >
                 Full name
               </label>
@@ -110,7 +141,7 @@ const Register = () => {
                   value={formik.values.name}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 py-3 pl-10 pr-4 text-sm text-slate-900 dark:text-slate-100 outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
               {formik.touched.name && formik.errors.name && (
@@ -124,7 +155,7 @@ const Register = () => {
             <div>
               <label
                 htmlFor="email"
-                className="mb-2 block text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
               >
                 Email address
               </label>
@@ -141,7 +172,7 @@ const Register = () => {
                   value={formik.values.email}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 py-3 pl-10 pr-4 text-sm text-slate-900 dark:text-slate-100 outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
               {formik.touched.email && formik.errors.email && (
@@ -155,7 +186,7 @@ const Register = () => {
             <div>
               <label
                 htmlFor="password"
-                className="mb-2 block text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
               >
                 Password
               </label>
@@ -168,11 +199,11 @@ const Register = () => {
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="Create a password"
+                  placeholder="Create a password (min. 8 characters)"
                   value={formik.values.password}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 py-3 pl-10 pr-4 text-sm text-slate-900 dark:text-slate-100 outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
               {formik.touched.password && formik.errors.password && (
@@ -186,7 +217,7 @@ const Register = () => {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="mb-2 block text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
               >
                 Confirm password
               </label>
@@ -203,7 +234,7 @@ const Register = () => {
                   value={formik.values.confirmPassword}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 py-3 pl-10 pr-4 text-sm text-slate-900 dark:text-slate-100 outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
               {formik.touched.confirmPassword &&
@@ -215,7 +246,7 @@ const Register = () => {
             </div>
 
             {/* Terms */}
-            <label className="flex items-start gap-2.5 text-sm leading-5 text-slate-600">
+            <label className="flex items-start gap-2.5 text-sm leading-5 text-slate-600 dark:text-slate-400 cursor-pointer">
               <input
                 type="checkbox"
                 name="terms"
@@ -226,11 +257,11 @@ const Register = () => {
               />
               <span>
                 I agree to the{" "}
-                <span className="font-medium text-indigo-600">
+                <span className="font-medium text-indigo-600 dark:text-indigo-400">
                   Terms of Service
                 </span>{" "}
                 and{" "}
-                <span className="font-medium text-indigo-600">
+                <span className="font-medium text-indigo-600 dark:text-indigo-400">
                   Privacy Policy
                 </span>
                 .
@@ -244,21 +275,22 @@ const Register = () => {
 
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/20"
+              disabled={formik.isSubmitting}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Create account
-              <ArrowRight size={17} />
+              {formik.isSubmitting ? "Creating account..." : "Create account"}
+              {!formik.isSubmitting && <ArrowRight size={17} />}
             </button>
             {formik.status && (
               <p className="mb-3 text-sm text-red-500">{formik.status}</p>
             )}
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-600">
+          <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
             Already have an account?{" "}
             <Link
               to="/login"
-              className="font-semibold text-indigo-600 hover:text-indigo-700"
+              className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
             >
               Sign in
             </Link>
@@ -266,7 +298,7 @@ const Register = () => {
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-400">
-          © {new Date().getFullYear()} LearnHub. All rights reserved.
+          LearnHub. All rights reserved.
         </p>
       </div>
     </main>

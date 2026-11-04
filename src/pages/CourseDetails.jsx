@@ -32,6 +32,7 @@ import {
 import LoadingState from "../components/common/LoadingState";
 import ErrorState from "../components/common/ErrorState";
 import EmptyState from "../components/common/EmptyState";
+import CourseQuiz from "../components/courses/CourseQuiz";
 
 const CourseDetails = () => {
   const { id } = useParams();
@@ -165,11 +166,11 @@ const CourseDetails = () => {
   if (!course) return <EmptyState />;
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-12">
+    <main className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-12 transition-colors">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           to="/courses"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-indigo-600"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
         >
           <ArrowLeft size={17} />
           All Courses
@@ -179,7 +180,7 @@ const CourseDetails = () => {
           {/* Main course content */}
           <div className="min-w-0">
             {/* Course thumbnail */}
-            <div className="mb-7 overflow-hidden rounded-2xl bg-gray-200">
+            <div className="mb-7 overflow-hidden rounded-2xl bg-gray-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
               {course.thumbnail ? (
                 <img
                   src={course.thumbnail}
@@ -190,7 +191,7 @@ const CourseDetails = () => {
                   }}
                 />
               ) : (
-                <div className="flex aspect-video flex-col items-center justify-center gap-3 bg-indigo-50 text-indigo-400">
+                <div className="flex aspect-video flex-col items-center justify-center gap-3 bg-indigo-50 dark:bg-slate-800 text-indigo-400">
                   <BookOpen size={56} strokeWidth={1.5} />
                   <span className="text-sm font-medium">Course preview</span>
                 </div>
@@ -198,50 +199,50 @@ const CourseDetails = () => {
             </div>
 
             {/* Course heading */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
+            <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8">
               <div className="mb-4 flex flex-wrap gap-2">
-                <span className="rounded-md bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700">
+                <span className="rounded-md bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 text-sm font-medium text-indigo-700 dark:text-indigo-300">
                   {course.category || "General"}
                 </span>
 
-                <span className="rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium capitalize text-gray-600">
+                <span className="rounded-md bg-gray-100 dark:bg-slate-800 px-3 py-1.5 text-sm font-medium capitalize text-gray-600 dark:text-gray-300">
                   {course.level || "All levels"}
                 </span>
               </div>
 
-              <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900 sm:text-4xl">
+              <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white sm:text-4xl">
                 {course.title}
               </h1>
 
-              <p className="mt-4 text-base leading-7 text-gray-600">
+              <p className="mt-4 text-base leading-7 text-gray-600 dark:text-slate-300">
                 {course.description}
               </p>
 
-              <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 border-t border-gray-100 pt-5 text-sm text-gray-600">
+              <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 border-t border-gray-100 dark:border-slate-800 pt-5 text-sm text-gray-600 dark:text-slate-400">
                 <span className="flex items-center gap-2">
-                  <Clock size={18} className="text-indigo-600" />
+                  <Clock size={18} className="text-indigo-600 dark:text-indigo-400" />
                   {course.duration ?? 0} hours
                 </span>
 
                 <span className="flex items-center gap-2">
-                  <BookOpen size={18} className="text-indigo-600" />
+                  <BookOpen size={18} className="text-indigo-600 dark:text-indigo-400" />
                   Self-paced learning
                 </span>
 
                 <span className="flex items-center gap-2">
-                  <GraduationCap size={19} className="text-indigo-600" />
+                  <GraduationCap size={19} className="text-indigo-600 dark:text-indigo-400" />
                   Online course
                 </span>
               </div>
             </div>
 
             {/* Learning outcomes */}
-            <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
-              <h2 className="text-xl font-bold text-gray-900">
+            <section className="mt-6 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 What you'll learn
               </h2>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
                 Skills and knowledge covered in this course.
               </p>
 
@@ -251,122 +252,127 @@ const CourseDetails = () => {
                     <div key={index} className="flex items-start gap-3">
                       <CheckCircle2
                         size={19}
-                        className="mt-0.5 shrink-0 text-green-600"
+                        className="mt-0.5 shrink-0 text-green-600 dark:text-green-400"
                       />
-                      <p className="text-sm leading-6 text-gray-600">{item}</p>
+                      <p className="text-sm leading-6 text-gray-600 dark:text-slate-300">{item}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="mt-5 text-sm text-gray-500">
+                <p className="mt-5 text-sm text-gray-500 dark:text-slate-400">
                   Learning outcomes haven't been added yet.
                 </p>
               )}
             </section>
 
             {/* Requirements */}
-            <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
-              <h2 className="text-xl font-bold text-gray-900">Requirements</h2>
+            <section className="mt-6 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Requirements</h2>
 
               {course.requirements?.length > 0 ? (
                 <ul className="mt-5 space-y-3">
                   {course.requirements.map((item, index) => (
                     <li
                       key={index}
-                      className="flex items-start gap-3 text-sm leading-6 text-gray-600"
+                      className="flex items-start gap-3 text-sm leading-6 text-gray-600 dark:text-slate-300"
                     >
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-600" />
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-600 dark:bg-indigo-400" />
                       {item}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-3 text-sm text-gray-500">
+                <p className="mt-3 text-sm text-gray-500 dark:text-slate-400">
                   No specific prerequisites listed.
                 </p>
               )}
             </section>
 
             {/* About course */}
-            <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
-              <h2 className="text-xl font-bold text-gray-900">
+            <section className="mt-6 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 About this course
               </h2>
 
-              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-gray-600">
+              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-gray-600 dark:text-slate-300">
                 {course.description}
               </p>
             </section>
 
             {/* Course lessons */}
-            <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
+            <section className="mt-6 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8">
               <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-indigo-50 p-3 text-indigo-600">
+                <div className="rounded-xl bg-indigo-50 dark:bg-indigo-950/60 p-3 text-indigo-600 dark:text-indigo-400">
                   <BookOpen size={24} />
                 </div>
 
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                     Course Lessons
                   </h2>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
                     Explore the lessons in this course.
                   </p>
                 </div>
               </div>
 
               {!alreadyEnrolled ? (
-                <p className="mt-5 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+                <p className="mt-5 rounded-xl bg-gray-50 dark:bg-slate-800/60 p-4 text-sm text-gray-600 dark:text-slate-300">
                   Enroll in this course to access its lessons.
                 </p>
               ) : myLessonLoading ? (
-                <p className="mt-5 text-sm text-gray-500">Loading lessons...</p>
+                <p className="mt-5 text-sm text-gray-500 dark:text-slate-400">Loading lessons...</p>
               ) : myLessonError ? (
-                <p role="alert" className="mt-5 text-sm text-red-600">
+                <p role="alert" className="mt-5 text-sm text-red-600 dark:text-red-400">
                   {myLessonError}
                 </p>
               ) : myLesson.length === 0 ? (
-                <p className="mt-5 rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
+                <p className="mt-5 rounded-xl bg-gray-50 dark:bg-slate-800/60 p-4 text-sm text-gray-500 dark:text-slate-400">
                   No lessons have been added to this course yet.
                 </p>
               ) : (
-                <div className="mt-6 divide-y divide-gray-100">
+                <div className="mt-6 divide-y divide-gray-100 dark:divide-slate-800">
                   {myLesson.map((lesson, index) => (
                     <Link
                       to={`/courses/${id}/lessons/${lesson._id}`}
                       key={lesson._id}
-                      className="flex items-center gap-4 py-4 transition hover:bg-gray-50"
+                      className="flex items-center gap-4 py-4 transition hover:bg-gray-50 dark:hover:bg-slate-800/50"
                     >
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
                         <PlayCircle size={22} />
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium text-gray-400">
+                        <p className="text-xs font-medium text-gray-400 dark:text-slate-500">
                           LESSON {index + 1}
                         </p>
 
-                        <h3 className="mt-1 font-semibold text-gray-900">
+                        <h3 className="mt-1 font-semibold text-gray-900 dark:text-white">
                           {lesson.title || `Lesson ${index + 1}`}
                         </h3>
                       </div>
 
                       <ArrowLeft
                         size={18}
-                        className="rotate-180 text-gray-400"
+                        className="rotate-180 text-gray-400 dark:text-slate-500"
                       />
                     </Link>
                   ))}
                 </div>
               )}
             </section>
+
+            {/* Course Quizzes */}
+            <section className="mt-6">
+              <CourseQuiz courseId={id} isEnrolled={alreadyEnrolled} />
+            </section>
           </div>
 
           {/* Enrollment card */}
-          <aside className="h-fit rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
-            <p className="text-sm font-medium text-gray-500">Course price</p>
+          <aside className="h-fit rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm lg:sticky lg:top-6">
+            <p className="text-sm font-medium text-gray-500 dark:text-slate-400">Course price</p>
 
-            <div className="mt-2 text-3xl font-bold text-gray-900">
+            <div className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
               {Number(course.price) === 0
                 ? "Free"
                 : `₹${Number(course.price).toLocaleString("en-IN")}`}
@@ -378,7 +384,7 @@ const CourseDetails = () => {
               disabled={
                 myCoursesLoading || enrollmentLoading || alreadyEnrolled
               }
-              className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+              className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-slate-700"
             >
               {myCoursesLoading
                 ? "Checking enrollment..."
@@ -390,7 +396,7 @@ const CourseDetails = () => {
             </button>
 
             {enrollmentSuccess && (
-              <p className="mt-3 text-center text-sm text-green-600">
+              <p className="mt-3 text-center text-sm text-green-600 dark:text-green-400">
                 Enrollment successful!
               </p>
             )}
@@ -399,44 +405,44 @@ const CourseDetails = () => {
               <p
                 role="status"
                 className={`mt-3 text-center text-sm ${
-                  alreadyEnrolled ? "text-amber-700" : "text-red-600"
+                  alreadyEnrolled ? "text-amber-700 dark:text-amber-400" : "text-red-600 dark:text-red-400"
                 }`}
               >
                 {enrollmentError}
               </p>
             )}
 
-            <div className="my-6 border-t border-gray-100" />
+            <div className="my-6 border-t border-gray-100 dark:border-slate-800" />
 
-            <h3 className="font-semibold text-gray-900">
+            <h3 className="font-semibold text-gray-900 dark:text-white">
               This course includes
             </h3>
 
-            <ul className="mt-4 space-y-4 text-sm text-gray-600">
+            <ul className="mt-4 space-y-4 text-sm text-gray-600 dark:text-slate-300">
               <li className="flex items-start gap-3">
-                <PlayCircle size={18} className="shrink-0 text-indigo-600" />
+                <PlayCircle size={18} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
                 Course learning materials
               </li>
 
               <li className="flex items-start gap-3">
-                <Clock size={18} className="shrink-0 text-indigo-600" />
+                <Clock size={18} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
                 {course.duration ?? 0} hours of content
               </li>
 
               <li className="flex items-start gap-3">
-                <GraduationCap size={19} className="shrink-0 text-indigo-600" />
+                <GraduationCap size={19} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
                 Self-paced learning
               </li>
 
               <li className="flex items-start gap-3">
-                <ShieldCheck size={18} className="shrink-0 text-indigo-600" />
+                <ShieldCheck size={18} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
                 Learn at your own pace
               </li>
             </ul>
 
             <Link
               to="/courses"
-              className="mt-6 flex w-full items-center justify-center rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+              className="mt-6 flex w-full items-center justify-center rounded-xl border border-gray-200 dark:border-slate-700 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-slate-200 transition hover:bg-gray-50 dark:hover:bg-slate-800"
             >
               Browse more courses
             </Link>

@@ -133,44 +133,46 @@ export default function MyLearning() {
   }).length;
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100 px-4 py-10 sm:px-6 lg:px-8 transition-colors">
       <div className="mx-auto max-w-7xl">
         {/* Page heading */}
         <div className="mb-8">
-          <p className="text-sm font-medium text-indigo-600">
+          <p className="text-sm font-semibold tracking-wide uppercase text-indigo-600 dark:text-indigo-400">
             STUDENT DASHBOARD
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold text-gray-900">My Learning</h1>
+          <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+            My Learning
+          </h1>
 
-          <p className="mt-2 text-gray-500">
+          <p className="mt-2 text-gray-500 dark:text-slate-400">
             Continue learning and keep moving toward your goals.
           </p>
         </div>
 
         {/* Summary cards */}
         <div className="mb-8 grid gap-4 sm:grid-cols-2">
-          <div className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5">
-            <div className="rounded-xl bg-indigo-50 p-3 text-indigo-600">
+          <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+            <div className="rounded-xl bg-indigo-50 dark:bg-indigo-950/60 p-3 text-indigo-600 dark:text-indigo-400">
               <BookOpen size={24} />
             </div>
 
             <div>
-              <p className="text-sm text-gray-500">Enrolled courses</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-gray-500 dark:text-slate-400">Enrolled courses</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {myCourses.length}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5">
-            <div className="rounded-xl bg-green-50 p-3 text-green-600">
+          <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/60 p-3 text-emerald-600 dark:text-emerald-400">
               <GraduationCap size={24} />
             </div>
 
             <div>
-              <p className="text-sm text-gray-500">Completed courses</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-gray-500 dark:text-slate-400">Completed courses</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {completedCoursesCount}
               </p>
             </div>
@@ -179,11 +181,11 @@ export default function MyLearning() {
 
         {/* Course heading */}
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Your courses</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your courses</h2>
 
           <Link
             to="/courses"
-            className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+            className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
           >
             Browse courses
           </Link>
@@ -191,20 +193,20 @@ export default function MyLearning() {
 
         {/* Empty state or course cards */}
         {myCourses.length === 0 ? (
-          <div className="rounded-2xl border border-gray-200 bg-white px-6 py-14 text-center">
-            <BookOpen size={40} className="mx-auto text-gray-400" />
+          <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-14 text-center">
+            <BookOpen size={40} className="mx-auto text-gray-400 dark:text-slate-500" />
 
-            <h3 className="mt-4 text-lg font-semibold text-gray-900">
+            <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
               No courses yet
             </h3>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
               Enroll in a course to start your learning journey.
             </p>
 
             <Link
               to="/courses"
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700 shadow-sm"
             >
               Explore courses
               <ArrowRight size={17} />
@@ -268,7 +270,7 @@ export default function MyLearning() {
                         </span>
                       </div>
 
-                      <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                      <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-slate-800">
                         <div
                           className={`h-full rounded-full transition-all ${
                             isCourseCompleted ? "bg-green-500" : "bg-indigo-600"

@@ -12,6 +12,7 @@ import {
 import api from "../services/api";
 import LoadingState from "../components/common/LoadingState";
 import ErrorState from "../components/common/ErrorState";
+import CourseQuiz from "../components/courses/CourseQuiz";
 
 import {
   fetchCourseDetailsFailure,
@@ -202,11 +203,11 @@ export default function LessonPlayer() {
   const currentLessonCompleted = isLessonCompleted(lesson._id);
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gray-50 dark:bg-slate-950 px-4 py-8 sm:px-6 lg:px-8 text-slate-900 dark:text-slate-100 transition-colors">
       <div className="mx-auto max-w-7xl">
         <Link
           to={`/courses/${id}`}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-indigo-600"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
         >
           <ArrowLeft size={17} />
           Back to course
@@ -233,22 +234,22 @@ export default function LessonPlayer() {
               )}
             </div>
 
-            <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
+            <div className="mt-6 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900">Course progress</h2>
-                <span className="text-sm font-bold text-indigo-600">
+                <h2 className="font-semibold text-gray-900 dark:text-white">Course progress</h2>
+                <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
                   {percentage}%
                 </span>
               </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-800">
                 <div
-                  className="h-full rounded-full bg-indigo-600 transition-all"
+                  className="h-full rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all"
                   style={{ width: `${percentage}%` }}
                 />
               </div>
 
               {progressError && (
-                <p className="mt-3 text-sm text-red-600">{progressError}</p>
+                <p className="mt-3 text-sm text-red-600 dark:text-red-400">{progressError}</p>
               )}
 
               <button
@@ -267,32 +268,32 @@ export default function LessonPlayer() {
               </button>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
-              <p className="text-sm font-medium text-indigo-600">
+            <div className="mt-6 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8">
+              <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                 LESSON {currentIndex + 1} OF {lessons.length}
               </p>
-              <h1 className="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">
+              <h1 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
                 {lesson.title}
               </h1>
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
+              <div className="mt-4 flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
                 <Clock size={17} />
                 {lesson.duration} minutes
               </div>
 
-              <div className="mt-6 border-t border-gray-100 pt-6">
-                <h2 className="text-lg font-semibold text-gray-900">
+              <div className="mt-6 border-t border-gray-100 dark:border-slate-800 pt-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   About this lesson
                 </h2>
-                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-gray-600">
+                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-gray-600 dark:text-slate-300">
                   {lesson.description}
                 </p>
               </div>
 
-              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-6">
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 dark:border-slate-800 pt-6">
                 {previousLesson ? (
                   <Link
                     to={`/courses/${id}/lessons/${previousLesson._id}`}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800"
                   >
                     <ArrowLeft size={17} />
                     Previous lesson
@@ -314,15 +315,20 @@ export default function LessonPlayer() {
                 )}
               </div>
             </div>
+
+            {/* Course Quizzes & Assessments */}
+            <div className="mt-8">
+              <CourseQuiz courseId={id} isEnrolled={true} />
+            </div>
           </section>
 
-          <aside className="rounded-2xl border border-gray-200 bg-white p-5 lg:sticky lg:top-6">
+          <aside className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 lg:sticky lg:top-6">
             <div className="mb-5">
-              <p className="text-sm font-medium text-indigo-600">YOUR COURSE</p>
-              <h2 className="mt-2 text-lg font-bold text-gray-900">
+              <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">YOUR COURSE</p>
+              <h2 className="mt-2 text-lg font-bold text-gray-900 dark:text-white">
                 {course?.title || "Course lessons"}
               </h2>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
                 {lessons.length} lessons
               </p>
             </div>
@@ -338,17 +344,17 @@ export default function LessonPlayer() {
                     to={`/courses/${id}/lessons/${item._id}`}
                     className={`flex items-start gap-3 rounded-xl border p-3 transition ${
                       isActive
-                        ? "border-indigo-200 bg-indigo-50"
-                        : "border-transparent hover:bg-gray-50"
+                        ? "border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40"
+                        : "border-transparent hover:bg-gray-50 dark:hover:bg-slate-800/60"
                     }`}
                   >
                     <div
                       className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
                         completed
-                          ? "bg-green-100 text-green-600"
+                          ? "bg-green-100 dark:bg-green-950/60 text-green-600 dark:text-green-400"
                           : isActive
                             ? "bg-indigo-600 text-white"
-                            : "bg-gray-100 text-gray-500"
+                            : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400"
                       }`}
                     >
                       {completed ? (
@@ -359,21 +365,21 @@ export default function LessonPlayer() {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-400 dark:text-slate-500">
                         LESSON {index + 1}
                       </p>
                       <p
                         className={`mt-1 text-sm font-semibold ${
-                          isActive ? "text-indigo-700" : "text-gray-800"
+                          isActive ? "text-indigo-700 dark:text-indigo-300" : "text-gray-800 dark:text-slate-200"
                         }`}
                       >
                         {item.title}
                       </p>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
                         {item.duration} minutes
                       </p>
                       {completed && (
-                        <p className="mt-1 text-xs font-medium text-green-600">
+                        <p className="mt-1 text-xs font-medium text-green-600 dark:text-green-400">
                           Completed
                         </p>
                       )}
